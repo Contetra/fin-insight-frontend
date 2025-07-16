@@ -1,109 +1,373 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { AssessmentService } from '@/services/assessmentService';
-import { Assessment } from '@/types/assessment';
-import { Download, FileSpreadsheet, Users, Calendar } from 'lucide-react';
+import { useAllInsights } from '@/hooks/useFormApi';
+import { Download, FileSpreadsheet, Users, Calendar, Eye, TrendingUp, X, Star, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-export const AdminDashboard = () => {
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const { toast } = useToast();
-
-  useEffect(() => {
-    loadAssessments();
-  }, []);
-
-  const loadAssessments = async () => {
-    setIsLoading(true);
-    try {
-      const data = await AssessmentService.getAllAssessments();
-      setAssessments(data);
-    } catch (error) {
-      console.error('Failed to load assessments:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load assessments.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+interface InsightData {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  priority: number;
+  insightData: Record<string, unknown>;
+  createdAt: string;
+  submission: {
+    id: string;
+    formType: string;
+    responses: Record<string, unknown>;
+    isComplete: boolean;
+    submissionDate: string;
+    updatedAt: string;
   };
+  respondent: {
+    id: string;
+    name: string;
+    email: string;
+    companyName: string;
+    createdAt: string;
+  };
+  reviews: Review[];
+}
 
-  const exportToExcel = async () => {
-    setIsLoading(true);
-    try {
-      const baseUrl = 'https://fypwyfkdwjeunrediyww.supabase.co/functions/v1/export-assessments';
-      const params = new URLSearchParams();
-      
-      if (startDate) params.append('start_date', startDate);
-      if (endDate) params.append('end_date', endDate);
-      
-      const url = params.toString() ? `${baseUrl}?${params}` : baseUrl;
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5cHd5Zmtkd2pldW5yZWRpeXd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1NzI1MDUsImV4cCI6MjA2ODE0ODUwNX0.e7SX9hIohJDRC8wsDdXVNa9IuSxLQkAQ-087wlYWQZc`
-        }
-      });
+interface Review {
+  id: string;
+  rating: number;
+  reaction: string;
+  feedback: string;
+  created_at: string;
+}
 
-      if (!response.ok) {
-        throw new Error('Export failed');
-      }
+// Component to display responses in popup
+const ResponsesModal = ({ responses }: { responses: Record<string, unknown> }) => {
+  const questionsWithResponses = (responses as Record<string, unknown>)?.questionsWithResponses as Array<{
+    questionId: string;
+    questionText: string;
+    questionDescription: string;
+    multiSelect: boolean;
+    selectedOptions: Array<{
+      id: string;
+      text: string;
+      description: string;
+      problem: string;
+    }>;
+  }> || [];
+  
+  return (
+    <div className="space-y-4 max-h-96 overflow-y-auto">
+      <h3 className="text-lg font-semibold mb-4">Assessment Responses</h3>
+      {questionsWithResponses.length > 0 ? (
+        questionsWithResponses.map((question, index) => (
+          <div key={index} className="border rounded-lg p-4 bg-gray-50">
+            <h4 className="font-medium text-gray-900 mb-2">{question.questionText}</h4>
+            <p className="text-sm text-gray-600 mb-3">{question.questionDescription}</p>
+            <div className="space-y-2">
+              {question.selectedOptions?.map((option, optIndex) => (
+                <div key={optIndex} className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
+                  <div className="font-medium text-blue-900">{option.text}</div>
+                  <div className="text-sm text-blue-600">{option.description}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))
+      ) : (
+        <p className="text-gray-500">No detailed responses available.</p>
+      )}
+    </div>
+  );
+};
 
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `assessments-export-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
+// Component to display identified problems in popup
+const ProblemsModal = ({ responses }: { responses: Record<string, unknown> }) => {
+  const identifiedProblems = (responses as Record<string, unknown>)?.identifiedProblems as string[] || [];
+  
+  return (
+    <div className="space-y-4 max-h-96 overflow-y-auto">
+      <h3 className="text-lg font-semibold mb-4">Identified Problems</h3>
+      {identifiedProblems.length > 0 ? (
+        <div className="space-y-3">
+          {identifiedProblems.map((problem, index) => (
+            <div key={index} className="bg-red-50 p-4 rounded-lg border-l-4 border-red-400">
+              <div className="font-medium text-red-900">{problem}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-gray-500">No problems identified.</p>
+      )}
+    </div>
+  );
+};
 
-      toast({
-        title: "Export Successful",
-        description: "Assessment data has been exported successfully.",
-      });
-    } catch (error) {
-      console.error('Export failed:', error);
-      toast({
-        title: "Export Failed",
-        description: "Failed to export assessment data.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+// Component to display reviews in popup
+const ReviewsModal = ({ reviews }: { reviews: Review[] }) => {
+  const getEmojiForReaction = (reaction: string) => {
+    switch (reaction) {
+      case 'Great': return '😊';
+      case 'Loved it': return '❤️';
+      case 'Excellent': return '🔥';
+      case 'Amazing': return '⚡';
+      default: return '😊';
     }
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Assessment Admin Dashboard</h1>
-        <Button onClick={exportToExcel} disabled={isLoading}>
-          <Download className="mr-2 h-4 w-4" />
-          Export to Excel
-        </Button>
+    <div className="space-y-4 max-h-96 overflow-y-auto">
+      <h3 className="text-lg font-semibold mb-4">Customer Reviews</h3>
+      {reviews.length > 0 ? (
+        <div className="space-y-4">
+          {reviews.map((review, index) => (
+            <div key={index} className="bg-gray-50 p-4 rounded-lg border">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-3">
+                  <div className="text-2xl">
+                    {getEmojiForReaction(review.reaction)}
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900">{review.reaction}</div>
+                    <div className="text-sm text-gray-500">
+                      {new Date(review.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-4 h-4 ${
+                        i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
+                  <span className="text-sm text-gray-600 ml-1">({review.rating}/5)</span>
+                </div>
+              </div>
+              {review.feedback && (
+                <div className="bg-white p-3 rounded border-l-4 border-blue-400">
+                  <p className="text-gray-700 text-sm italic">"{review.feedback}"</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-gray-500">No reviews available.</p>
+      )}
+    </div>
+  );
+};
+
+export const AdminDashboard = () => {
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const { toast } = useToast();
+  
+  // Use the hook to get insights with complete data
+  const { data: insightsData, isLoading, error } = useAllInsights();
+  const insights = insightsData?.data || [];
+
+  // Get unique submissions for statistics
+  const uniqueSubmissions = insights.reduce((unique, insight) => {
+    const existingSubmission = unique.find(u => u.submissionId === insight.submission.id);
+    if (!existingSubmission) {
+      unique.push({
+        submissionId: insight.submission.id,
+        respondentId: insight.respondent.id,
+        submissionDate: insight.submission.submissionDate,
+        respondent: insight.respondent,
+        formType: insight.submission.formType,
+        isComplete: insight.submission.isComplete,
+        reviews: insights.filter(i => i.respondent.id === insight.respondent.id).reduce((allReviews, i) => {
+          return [...allReviews, ...i.reviews];
+        }, [] as Review[])
+      });
+    }
+    return unique;
+  }, [] as Array<{
+    submissionId: string;
+    respondentId: string;
+    submissionDate: string;
+    respondent: { id: string; name: string; email: string; companyName: string; createdAt: string };
+    formType: string;
+    isComplete: boolean;
+    reviews: Review[];
+  }>).sort((a, b) => {
+    // Sort by submission date descending (latest first)
+    return new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime();
+  });
+
+  // Pagination logic
+  const totalPages = Math.ceil(uniqueSubmissions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentSubmissions = uniqueSubmissions.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(parseInt(value));
+    setCurrentPage(1);
+  };
+
+  // Show error if API call fails
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load insights.",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  const exportToExcel = async () => {
+    try {
+      const exportData = insights.map(insight => ({
+        // Respondent Info
+        respondentId: insight.respondent.id,
+        respondentName: insight.respondent.name,
+        respondentEmail: insight.respondent.email,
+        companyName: insight.respondent.companyName,
+        respondentCreatedAt: insight.respondent.createdAt,
+        
+        // Submission Info
+        submissionId: insight.submission.id,
+        formType: insight.submission.formType,
+        submissionDate: insight.submission.submissionDate,
+        isComplete: insight.submission.isComplete,
+        submissionUpdatedAt: insight.submission.updatedAt,
+        
+        // Insight Info
+        insightId: insight.id,
+        insightTitle: insight.title,
+        insightContent: insight.content,
+        insightCategory: insight.category,
+        insightPriority: insight.priority,
+        insightCreatedAt: insight.createdAt,
+        
+        // Form Responses and Insight Data
+        responses: insight.submission.responses,
+        insightData: insight.insightData,
+      }));
+
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      
+      const link = document.createElement('a');
+      link.href = dataUri;
+      link.download = `insights-export-${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      
+      toast({
+        title: "Success",
+        description: "Insights data exported successfully.",
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export data.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg">Loading insights...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Admin Dashboard - Financial Insights</h1>
+        <div className="flex space-x-4">
+          <Input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            placeholder="Start Date"
+            className="w-40"
+          />
+          <Input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            placeholder="End Date"
+            className="w-40"
+          />
+          <Button onClick={exportToExcel} className="flex items-center space-x-2">
+            <Download className="h-4 w-4" />
+            <span>Export Data</span>
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Assessments</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Submissions</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{assessments.length}</div>
+            <div className="text-2xl font-bold">{uniqueSubmissions.length}</div>
           </CardContent>
         </Card>
-
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Insights</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{insights.length}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <Eye className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{uniqueSubmissions.filter(s => s.isComplete).length}</div>
+          </CardContent>
+        </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">This Week</CardTitle>
@@ -111,71 +375,215 @@ export const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {assessments.filter(a => 
-                new Date(a.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+              {uniqueSubmissions.filter(s => 
+                new Date(s.submissionDate) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
               ).length}
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Export Ready</CardTitle>
-            <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">Ready</div>
-          </CardContent>
-        </Card>
       </div>
 
+      {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Export Filters</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium">Start Date</label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">End Date</label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Assessments</CardTitle>
+          <CardTitle>All Submissions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {assessments.slice(0, 10).map((assessment) => (
-              <div key={assessment.id} className="flex justify-between items-center p-4 border rounded-lg">
-                <div>
-                  <h3 className="font-medium">{assessment.full_name}</h3>
-                  <p className="text-sm text-gray-600">{assessment.company_name} - {assessment.designation}</p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(assessment.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="text-sm text-gray-500">
-                  {assessment.identified_problems.length} problems identified
-                </div>
-              </div>
-            ))}
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Show</span>
+              <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-600">entries</span>
+            </div>
+            <div className="text-sm text-gray-600">
+              Showing {startIndex + 1} to {Math.min(endIndex, uniqueSubmissions.length)} of {uniqueSubmissions.length} entries
+            </div>
           </div>
+          
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Company</TableHead>
+                <TableHead>Designation</TableHead>
+                <TableHead>Submission Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Reviews</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentSubmissions.map((submission) => {
+                const responses = insights.find(i => i.submission.id === submission.submissionId)?.submission.responses || {};
+                const personalDetails = (responses as Record<string, unknown>)?.personalDetails as Record<string, string> || {};
+                
+                return (
+                  <TableRow key={submission.submissionId}>
+                    <TableCell className="font-medium">{submission.respondent.name}</TableCell>
+                    <TableCell>{submission.respondent.email}</TableCell>
+                    <TableCell>{submission.respondent.companyName}</TableCell>
+                    <TableCell>{personalDetails.designation || 'N/A'}</TableCell>
+                    <TableCell>{new Date(submission.submissionDate).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        submission.isComplete 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {submission.isComplete ? 'Completed' : 'In Progress'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {submission.reviews.length > 0 ? (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">
+                            {submission.reviews.length} review{submission.reviews.length > 1 ? 's' : ''}
+                          </span>
+                          <div className="flex items-center space-x-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3 h-3 ${
+                                  i < Math.round(submission.reviews.reduce((sum, r) => sum + r.rating, 0) / submission.reviews.length)
+                                    ? 'text-yellow-400 fill-current' 
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">No reviews</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              View Responses
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-3xl">
+                            <DialogHeader>
+                              <DialogTitle>Responses for {submission.respondent.name}</DialogTitle>
+                            </DialogHeader>
+                            <ResponsesModal responses={responses} />
+                          </DialogContent>
+                        </Dialog>
+                        
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              View Problems
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Problems for {submission.respondent.name}</DialogTitle>
+                            </DialogHeader>
+                            <ProblemsModal responses={responses} />
+                          </DialogContent>
+                        </Dialog>
+
+                        {submission.reviews.length > 0 && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="flex items-center space-x-1">
+                                <MessageSquare className="w-4 h-4" />
+                                <span>Reviews</span>
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>Reviews for {submission.respondent.name}</DialogTitle>
+                              </DialogHeader>
+                              <ReviewsModal reviews={submission.reviews} />
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Button>
+                
+                <div className="flex items-center space-x-1">
+                  {[...Array(totalPages)].map((_, i) => {
+                    const page = i + 1;
+                    if (
+                      page === 1 ||
+                      page === totalPages ||
+                      (page >= currentPage - 2 && page <= currentPage + 2)
+                    ) {
+                      return (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(page)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {page}
+                        </Button>
+                      );
+                    } else if (
+                      page === currentPage - 3 ||
+                      page === currentPage + 3
+                    ) {
+                      return (
+                        <span key={page} className="px-2 text-gray-500">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

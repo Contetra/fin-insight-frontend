@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, ArrowRight, TrendingUp, Shield, Calculator, Target, Users, Upload, X, Camera, Trophy, Flame, PartyPopper, Eye, ThumbsUp, Heart, Zap, Calendar, ExternalLink, Star } from "lucide-react";
+import { CheckCircle, ArrowRight, TrendingUp, Shield, Calculator, Target, Users, X, Trophy, Flame, PartyPopper, Eye, ThumbsUp, Heart, Zap, Calendar, ExternalLink, Star, Loader2 } from "lucide-react";
+import { useFinancialAssessmentSubmission, useReviewSubmission } from "@/hooks/useFormApi";
 
 interface PersonalDetails {
   fullName: string;
@@ -41,7 +42,6 @@ interface Feedback {
   reaction: string;
   message: string;
   timestamp: number;
-  profilePhoto?: string;
 }
 
 const questions: Question[] = [
@@ -313,13 +313,19 @@ const Index = () => {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string[]>>({});
   const [identifiedProblems, setIdentifiedProblems] = useState<string[]>([]);
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
-  const [feedbackData, setFeedbackData] = useState({ rating: 0, reaction: '', message: '', profilePhoto: '' });
+  const [feedbackData, setFeedbackData] = useState({ rating: 0, reaction: '', message: '' });
   const [showTopNotification, setShowTopNotification] = useState<{ title: string; message: string } | null>(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showFirework, setShowFirework] = useState(false);
   const [latestFeedback, setLatestFeedback] = useState<Feedback | null>(null);
   const [emojiFireworks, setEmojiFireworks] = useState<string[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // API hook for form submission
+  const financialAssessmentMutation = useFinancialAssessmentSubmission();
+  const reviewSubmissionMutation = useReviewSubmission();
+
+  // Store respondent ID for review submission
+  const [respondentId, setRespondentId] = useState<string | null>(null);
 
   // Load feedback from localStorage on component mount
   useEffect(() => {
@@ -378,6 +384,16 @@ const Index = () => {
       setCurrentQuestion(prev => prev + 1);
       showNotification("🎯 Phase Complete!", `Moving to phase ${currentQuestion + 2} of ${questions.length}`);
     } else {
+      // Check if at least one option is selected across all questions before proceeding
+      const hasSelectedOptions = Object.keys(selectedAnswers).some(questionId => 
+        selectedAnswers[questionId] && selectedAnswers[questionId].length > 0
+      );
+
+      if (!hasSelectedOptions) {
+        showNotification("Mission Planning Required", "Please select at least one option from any question to proceed with your mission brief.");
+        return;
+      }
+
       // Compile problems and move to personal details
       const problems: string[] = [];
       Object.entries(selectedAnswers).forEach(([questionId, optionIds]) => {
@@ -389,7 +405,12 @@ const Index = () => {
           }
         });
       });
-      setIdentifiedProblems(problems);
+      // Remove duplicates by converting to Set and back to array
+      const uniqueProblems = [...new Set(problems)];
+      console.log('All problems found:', problems);
+      console.log('Unique problems after deduplication:', uniqueProblems);
+      console.log('Unique problems length:', uniqueProblems.length);
+      setIdentifiedProblems(uniqueProblems);
       setCurrentStage('personal-details');
     }
   };
@@ -399,6 +420,16 @@ const Index = () => {
       setCurrentQuestion(prev => prev + 1);
       showNotification("⏭️ Skipped Phase", "Moving to the next phase of your heist plan.");
     } else {
+      // Check if at least one option is selected across all questions before proceeding
+      const hasSelectedOptions = Object.keys(selectedAnswers).some(questionId => 
+        selectedAnswers[questionId] && selectedAnswers[questionId].length > 0
+      );
+
+      if (!hasSelectedOptions) {
+        showNotification("Mission Planning Required", "Please select at least one option from any question to proceed with your mission brief.");
+        return;
+      }
+
       const problems: string[] = [];
       Object.entries(selectedAnswers).forEach(([questionId, optionIds]) => {
         const question = questions.find(q => q.id === questionId);
@@ -409,17 +440,91 @@ const Index = () => {
           }
         });
       });
-      setIdentifiedProblems(problems);
+      // Remove duplicates by converting to Set and back to array
+      const uniqueProblems = [...new Set(problems)];
+      setIdentifiedProblems(uniqueProblems);
       setCurrentStage('personal-details');
     }
   };
 
-  const handlePersonalDetailsSubmit = () => {
+  const handlePersonalDetailsSubmit = async () => {
     if (!personalDetails.fullName || !personalDetails.designation || !personalDetails.companyName) {
       showNotification("Intel Required", "We need all your details to complete the mission brief.");
       return;
     }
-    setCurrentStage('results');
+
+    // Check if at least one option is selected across all questions
+    const hasSelectedOptions = Object.keys(selectedAnswers).some(questionId => 
+      selectedAnswers[questionId] && selectedAnswers[questionId].length > 0
+    );
+
+    if (!hasSelectedOptions) {
+      showNotification("Mission Planning Required", "Please select at least one option from the questionnaire to proceed with your mission brief.");
+      return;
+    }
+
+    try {
+      // Transform selectedAnswers to include full question and answer details
+      const questionsWithResponses = Object.entries(selectedAnswers).map(([questionId, optionIds]) => {
+        const question = questions.find(q => q.id === questionId);
+        if (!question) return null;
+
+        const selectedOptions = optionIds.map(optionId => {
+          const option = question.options.find(o => o.id === optionId);
+          return option ? {
+            id: optionId,
+            text: option.text,
+            description: option.description,
+            problem: option.problem
+          } : null;
+        }).filter(Boolean);
+
+        return {
+          questionId,
+          questionText: question.text,
+          questionDescription: question.description,
+          multiSelect: question.multiSelect,
+          selectedOptions
+        };
+      }).filter(Boolean);
+
+      // Submit the form data to your backend
+      const result = await financialAssessmentMutation.mutateAsync({
+        fullName: personalDetails.fullName,
+        designation: personalDetails.designation,
+        companyName: personalDetails.companyName,
+        selectedAnswers: selectedAnswers, // Keep original for compatibility
+        questionsWithResponses: questionsWithResponses, // Add detailed responses
+        identifiedProblems: identifiedProblems,
+      });
+
+      console.log('Form submitted successfully:', result);
+      
+      // Extract respondent ID from the response to use for review submission
+      if (result.data && result.data.length > 0) {
+        const submissionData = result.data[0];
+        console.log('Submission data:', submissionData);
+        
+        // Check if respondentId is directly available in the response
+        if (submissionData.respondentId) {
+          setRespondentId(submissionData.respondentId);
+          console.log('Respondent ID extracted from response:', submissionData.respondentId);
+        } else {
+          console.error('Could not extract respondent ID from response:', submissionData);
+          console.error('Available fields in response:', Object.keys(submissionData));
+        }
+      } else {
+        console.error('No data in API response:', result);
+      }
+      
+      showNotification("🎯 Mission Brief Generated!", "Your data has been saved successfully!");
+      
+      // Move to results stage
+      setCurrentStage('results');
+    } catch (error) {
+      console.error('Form submission failed:', error);
+      showNotification("❌ Submission Failed", "Please try again or contact support.");
+    }
   };
 
   const handleReattempt = () => {
@@ -429,45 +534,16 @@ const Index = () => {
     setSelectedAnswers({});
     setIdentifiedProblems([]);
     setPersonalDetails({ fullName: '', designation: '', companyName: '' });
+    setRespondentId(null);
     showNotification("🔄 Mission Reset", "Starting fresh mission planning!");
   };
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFeedbackData(prev => ({ ...prev, profilePhoto: e.target?.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
+    // Removed profile photo upload functionality
   };
 
   const handleCameraCapture = () => {
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        const video = document.createElement('video');
-        video.srcObject = stream;
-        video.play();
-        
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        
-        video.onloadedmetadata = () => {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          context?.drawImage(video, 0, 0);
-          
-          const imageData = canvas.toDataURL('image/png');
-          setFeedbackData(prev => ({ ...prev, profilePhoto: imageData }));
-          
-          stream.getTracks().forEach(track => track.stop());
-        };
-      })
-      .catch(err => {
-        console.error('Error accessing camera:', err);
-        showNotification("Camera Error", "Unable to access camera. Please try uploading a photo instead.");
-      });
+    // Removed camera capture functionality
   };
 
   const triggerEmojiFirework = (emoji: string) => {
@@ -478,39 +554,73 @@ const Index = () => {
     }, 2000);
   };
 
-  const handleFeedbackSubmit = () => {
+  const handleFeedbackSubmit = async () => {
+    console.log('Feedback submission started', {
+      rating: feedbackData.rating,
+      respondentId: respondentId,
+      personalDetails: personalDetails
+    });
+    
     if (feedbackData.rating === 0) {
       showNotification("Rating Required", "Please provide a rating for the assessment.");
       return;
     }
 
-    const feedback: Feedback = {
-      id: Date.now().toString(),
-      name: personalDetails.fullName,
-      rating: feedbackData.rating,
-      reaction: feedbackData.reaction,
-      message: feedbackData.message,
-      timestamp: Date.now(),
-      profilePhoto: feedbackData.profilePhoto
-    };
-
-    const updatedFeedback = [...feedbackList, feedback];
-    setFeedbackList(updatedFeedback);
-    setLatestFeedback(feedback);
-    localStorage.setItem('finance-assessment-feedback', JSON.stringify(updatedFeedback));
-    
-    // Trigger emoji firework
-    if (feedbackData.reaction) {
-      triggerEmojiFirework(feedbackData.reaction);
+    if (!respondentId) {
+      console.error('No respondent ID available for review submission');
+      showNotification("Error", "Unable to submit review. Please complete the assessment first.");
+      return;
     }
-    
-    // Trigger general firework effect
-    setShowFirework(true);
-    setTimeout(() => setShowFirework(false), 2000);
-    
-    setFeedbackData({ rating: 0, reaction: '', message: '', profilePhoto: '' });
-    setShowFeedbackModal(false);
-    showNotification("Thank you!", "Your feedback has been submitted successfully.");
+
+    try {
+      console.log('Submitting review with data:', {
+        respondentId: respondentId,
+        rating: feedbackData.rating,
+        reaction: feedbackData.reaction,
+        feedback: feedbackData.message,
+      });
+      
+      // Submit review to API
+      const result = await reviewSubmissionMutation.mutateAsync({
+        respondentId: respondentId,
+        rating: feedbackData.rating,
+        reaction: feedbackData.reaction,
+        feedback: feedbackData.message,
+      });
+      
+      console.log('Review submission result:', result);
+
+      // Also save to localStorage for UI feedback display
+      const feedback: Feedback = {
+        id: Date.now().toString(),
+        name: personalDetails.fullName,
+        rating: feedbackData.rating,
+        reaction: feedbackData.reaction,
+        message: feedbackData.message,
+        timestamp: Date.now()
+      };
+
+      const updatedFeedback = [...feedbackList, feedback];
+      setFeedbackList(updatedFeedback);
+      setLatestFeedback(feedback);
+      localStorage.setItem('finance-assessment-feedback', JSON.stringify(updatedFeedback));
+      
+      // Trigger emoji firework
+      if (feedbackData.reaction) {
+        triggerEmojiFirework(feedbackData.reaction);
+      }
+      
+      // Trigger general firework effect
+      setShowFirework(true);
+      setTimeout(() => setShowFirework(false), 2000);
+      
+      setFeedbackData({ rating: 0, reaction: '', message: '' });
+      setShowFeedbackModal(false);
+      showNotification("Thank you!", "Your feedback has been submitted successfully.");
+    } catch (error) {
+      console.error('Failed to submit review:', error);
+      showNotification("Error", "Failed to submit review. Please try again.");
+    }
   };
 
   const getProgress = () => {
@@ -583,19 +693,11 @@ const Index = () => {
                 <div className="flex items-start space-x-4">
                   {/* Profile Photo */}
                   <div className="flex-shrink-0">
-                    {latestFeedback.profilePhoto ? (
-                      <img 
-                        src={latestFeedback.profilePhoto} 
-                        alt={latestFeedback.name}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-purple-300/50"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center border-2 border-purple-300/50">
-                        <span className="text-lg font-bold">
-                          {latestFeedback.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center border-2 border-purple-300/50">
+                      <span className="text-lg font-bold">
+                        {latestFeedback.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="flex-1 min-w-0">
@@ -871,6 +973,12 @@ const Index = () => {
   }
 
   if (currentStage === 'personal-details') {
+    // Calculate answered questions for display
+    const answeredQuestions = Object.keys(selectedAnswers).filter(questionId => 
+      selectedAnswers[questionId] && selectedAnswers[questionId].length > 0
+    ).length;
+    const totalQuestions = questions.length;
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 relative overflow-hidden">
         {/* Top notification */}
@@ -892,6 +1000,15 @@ const Index = () => {
               <span className="text-lg font-bold text-purple-100">
                 🎯 Mission Intel Required!
               </span>
+            </div>
+            
+            {/* Progress indicator */}
+            <div className="mt-4 mb-6">
+              <div className="bg-slate-800/50 rounded-full px-4 py-2 inline-block border border-slate-600/30">
+                <span className="text-sm text-purple-200">
+                  📊 Questions Answered: <span className="font-bold text-purple-100">{answeredQuestions}</span>/{totalQuestions}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -945,10 +1062,20 @@ const Index = () => {
           <div className="flex justify-center mt-8">
             <Button 
               onClick={handlePersonalDetailsSubmit}
+              disabled={financialAssessmentMutation.isPending}
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              🚀 Generate Mission Brief
-              <ArrowRight className="ml-2 w-4 h-4" />
+              {financialAssessmentMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  🚀 Generate Mission Brief
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -959,8 +1086,20 @@ const Index = () => {
   if (currentStage === 'results') {
     // Use identified problems or show congratulations if user skipped questions
     const solutionsToShow = identifiedProblems.length > 0 
-      ? identifiedProblems.slice(0, 3).map(problem => solutions.find(s => s.problem === problem)).filter(Boolean)
+      ? identifiedProblems.map(problem => solutions.find(s => s.problem === problem)).filter(Boolean)
       : [];
+
+    console.log('identifiedProblems:', identifiedProblems);
+    console.log('solutionsToShow:', solutionsToShow);
+    
+    // Debug: Check each problem individually
+    identifiedProblems.forEach((problem, index) => {
+      const foundSolution = solutions.find(s => s.problem === problem);
+      console.log(`Problem ${index + 1}: "${problem}" -> Solution found:`, !!foundSolution);
+      if (!foundSolution) {
+        console.log(`Available solutions:`, solutions.map(s => s.problem));
+      }
+    });
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 relative overflow-hidden">
@@ -1000,62 +1139,6 @@ const Index = () => {
                 </Button>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Profile Photo Section */}
-                <div className="text-center">
-                  <Label className="text-sm font-medium text-slate-700 mb-3 block">Add your profile photo (optional)</Label>
-                  <div className="flex items-center justify-center space-x-4">
-                    {feedbackData.profilePhoto ? (
-                      <div className="relative">
-                        <img 
-                          src={feedbackData.profilePhoto} 
-                          alt="Profile"
-                          className="w-20 h-20 rounded-full object-cover border-4 border-purple-200"
-                        />
-                        <button
-                          onClick={() => setFeedbackData(prev => ({ ...prev, profilePhoto: '' }))}
-                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white text-2xl font-bold border-4 border-purple-200">
-                        {personalDetails.fullName.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    
-                    <div className="flex flex-col space-y-2">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoUpload}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center space-x-2"
-                      >
-                        <Upload className="w-4 h-4" />
-                        <span>Upload</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCameraCapture}
-                        className="flex items-center space-x-2"
-                      >
-                        <Camera className="w-4 h-4" />
-                        <span>Selfie</span>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
                 <div>
                   <Label className="text-sm font-medium text-slate-700 mb-3 block">How would you rate this assessment?</Label>
                   <div className="flex space-x-2 justify-center">
