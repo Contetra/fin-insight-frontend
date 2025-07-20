@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, ArrowRight, TrendingUp, Shield, Calculator, Target, Users, X, Trophy, Flame, PartyPopper, Eye, ThumbsUp, Heart, Zap, Calendar, ExternalLink, Star, Loader2 } from "lucide-react";
-import { useFinancialAssessmentSubmission, useReviewSubmission } from "@/hooks/useFormApi";
+import { CheckCircle, ArrowRight, TrendingUp, Shield, Calculator, Target, Users, Upload, X, Camera, Trophy, Flame, PartyPopper, Eye, ThumbsUp, Heart, Zap, Calendar, ExternalLink, Star, BarChart3 } from "lucide-react";
 
 interface PersonalDetails {
   fullName: string;
@@ -42,67 +41,180 @@ interface Feedback {
   reaction: string;
   message: string;
   timestamp: number;
-}
-
-interface StageDetails {
-  title: string;
-  subtitle: string;
-  description: string;
-  problems: string[];
-  solutions: string[];
+  profilePhoto?: string;
 }
 
 const questions: Question[] = [
   {
-    id: "excel-chaos",
-    text: "Be Honest",
-    description: "How chaotic (or smooth) is your Excel situation?",
+    id: "excel-situation",
+    text: "How chaotic (or smooth) is your Excel situation?",
+    description: "Be Honest",
     multiSelect: false,
     options: [
-      { id: "1", text: "Disjointed Excel", description: "", problem: "", icon: Calculator },
-      { id: "2", text: "Very basic dashboards", description: "", problem: "", icon: Calculator },
-      { id: "3", text: "Real-time data flows between spreadsheets", description: "", problem: "", icon: Calculator },
-      { id: "4", text: "Dynamic MIS and macros", description: "", problem: "", icon: Calculator },
-      { id: "5", text: "Predictive Analysis", description: "", problem: "", icon: Calculator }
+      { 
+        id: "1", 
+        text: "Disjointed Excel", 
+        description: "scattered spreadsheets with no connection",
+        problem: "Excel Data Management Issues",
+        icon: Calculator
+      },
+      { 
+        id: "2", 
+        text: "Very basic dashboards", 
+        description: "simple reporting tools",
+        problem: "Basic Reporting Limitations",
+        icon: BarChart3
+      },
+      { 
+        id: "3", 
+        text: "Real-time data flows between spreadsheets", 
+        description: "connected but manual processes",
+        problem: "Manual Data Integration",
+        icon: TrendingUp
+      },
+      { 
+        id: "4", 
+        text: "Dynamic MIS and macros", 
+        description: "automated reporting systems",
+        problem: "Advanced Excel Dependencies",
+        icon: Target
+      },
+      { 
+        id: "5", 
+        text: "Predictive Analysis", 
+        description: "forecasting and trend analysis",
+        problem: "Advanced Analytics Needs",
+        icon: TrendingUp
+      }
     ]
   },
   {
-    id: "erp-reality",
-    text: "ERP Reality Check",
-    description: "Where does your ERP journey stand today?",
+    id: "erp-journey",
+    text: "Where does your ERP journey stand today?",
+    description: "ERP Reality Check",
     multiSelect: false,
     options: [
-      { id: "1", text: "Accounting is on Tally, no other major tools", description: "", problem: "", icon: Shield },
-      { id: "2", text: "Patchwork ERP/Systems in silo", description: "", problem: "", icon: Shield },
-      { id: "3", text: "Sophisticated ERP system but no integrations", description: "", problem: "", icon: Shield },
-      { id: "4", text: "Highly automated integrations and ERP system", description: "", problem: "", icon: Shield },
-      { id: "5", text: "Only Financial Statement preparation is manual (Everything else is automated within the ERP/outside the ERP)", description: "", problem: "", icon: Shield }
+      { 
+        id: "1", 
+        text: "Accounting is on Tally, no other major tools", 
+        description: "basic accounting software only",
+        problem: "Limited ERP Infrastructure",
+        icon: Calculator
+      },
+      { 
+        id: "2", 
+        text: "Patchwork ERP/Systems in silo", 
+        description: "disconnected systems",
+        problem: "System Integration Challenges",
+        icon: Shield
+      },
+      { 
+        id: "3", 
+        text: "Sophisticated ERP system but no integrations", 
+        description: "advanced but isolated",
+        problem: "ERP Integration Gaps",
+        icon: Eye
+      },
+      { 
+        id: "4", 
+        text: "Highly automated integrations and ERP system", 
+        description: "connected and automated",
+        problem: "Optimization Opportunities",
+        icon: Target
+      },
+      { 
+        id: "5", 
+        text: "Only Financial Statement preparation is manual (Everything else is automated within the ERP/outside the ERP)", 
+        description: "near-complete automation",
+        problem: "Final Process Automation",
+        icon: Trophy
+      }
     ]
   },
   {
-    id: "manual-misery",
-    text: "Manual Work Misery",
-    description: "How much is your finance team stuck in manual mode?",
+    id: "manual-work",
+    text: "How much is your finance team stuck in manual mode?",
+    description: "Manual Work Misery",
     multiSelect: false,
     options: [
-      { id: "1", text: "Excessive manual work", description: "", problem: "", icon: Flame },
-      { id: "2", text: "Mostly manual work, but accounting is on ERP", description: "", problem: "", icon: Flame },
-      { id: "3", text: "Core finance on ERP, reconciliations done outside the system", description: "", problem: "", icon: Flame },
-      { id: "4", text: "Completely automated, but scope for improvement", description: "", problem: "", icon: Flame },
-      { id: "5", text: "Investment-ready/global best practices adopted", description: "", problem: "", icon: Flame }
+      { 
+        id: "1", 
+        text: "Excessive manual work", 
+        description: "most processes are manual",
+        problem: "High Manual Workload",
+        icon: Shield
+      },
+      { 
+        id: "2", 
+        text: "Mostly manual work, but accounting is on ERP", 
+        description: "basic automation in place",
+        problem: "Limited Process Automation",
+        icon: Calculator
+      },
+      { 
+        id: "3", 
+        text: "Core finance on ERP, reconciliations done outside the system", 
+        description: "partial automation achieved",
+        problem: "Reconciliation Process Gaps",
+        icon: BarChart3
+      },
+      { 
+        id: "4", 
+        text: "Completely automated, but scope for improvement", 
+        description: "high automation with optimization potential",
+        problem: "Process Optimization Needs",
+        icon: Target
+      },
+      { 
+        id: "5", 
+        text: "Investment-ready/global best practices adopted", 
+        description: "world-class finance operations",
+        problem: "Continuous Excellence Maintenance",
+        icon: Trophy
+      }
     ]
   },
   {
     id: "process-discipline",
-    text: "Process Discipline",
-    description: "How solid are your finance processes on paper?",
+    text: "How solid are your finance processes on paper?",
+    description: "Process Discipline",
     multiSelect: false,
     options: [
-      { id: "1", text: "No documented SOPs", description: "", problem: "", icon: Target },
-      { id: "2", text: "Processes are consistent, but not linked to best practices", description: "", problem: "", icon: Target },
-      { id: "3", text: "Best practices adopted, not sure of adherence", description: "", problem: "", icon: Target },
-      { id: "4", text: "Documented and adopted best practices", description: "", problem: "", icon: Target },
-      { id: "5", text: "IFC, ICFR and all ELCs (Entity Level Controls) in place", description: "", problem: "", icon: Target }
+      { 
+        id: "1", 
+        text: "No documented SOPs", 
+        description: "processes exist but not documented",
+        problem: "Process Documentation Gaps",
+        icon: Shield
+      },
+      { 
+        id: "2", 
+        text: "Processes are consistent, but not linked to best practices", 
+        description: "standardized but not optimized",
+        problem: "Best Practice Implementation",
+        icon: Eye
+      },
+      { 
+        id: "3", 
+        text: "Best practices adopted, not sure of adherence", 
+        description: "good framework, uncertain execution",
+        problem: "Process Adherence Monitoring",
+        icon: BarChart3
+      },
+      { 
+        id: "4", 
+        text: "Documented and adopted best practices", 
+        description: "well-documented and followed",
+        problem: "Advanced Control Implementation",
+        icon: Target
+      },
+      { 
+        id: "5", 
+        text: "IFC, ICFR and all ELCs (Entity Level Controls) in place", 
+        description: "comprehensive control framework",
+        problem: "Control Framework Optimization",
+        icon: Trophy
+      }
     ]
   }
 ];
@@ -221,140 +333,6 @@ const defaultSolutions: Solution[] = [
   }
 ];
 
-// --- STAGE LOGIC (from index2.tsx, adapted) ---
-const calculateStage = (selectedAnswers: Record<string, string[]>) => {
-  const values: number[] = [];
-  Object.values(selectedAnswers).forEach(optionIds => {
-    optionIds.forEach(optionId => {
-      const num = parseInt(optionId);
-      if (!isNaN(num)) values.push(num);
-    });
-  });
-
-  if (values.length === 0) return 1;
-
-  const freq: Record<number, number> = {};
-  values.forEach(num => {
-    freq[num] = (freq[num] || 0) + 1;
-  });
-
-  const uniqueOptions = Object.keys(freq).map(Number);
-
-  // 1. All same
-  if (uniqueOptions.length === 1) {
-    return uniqueOptions[0];
-  }
-
-  // 2. All different
-  if (uniqueOptions.length === values.length) {
-    return Math.max(...uniqueOptions);
-  }
-
-  // 3. Tie for most frequent
-  const maxCount = Math.max(...Object.values(freq));
-  const mostFrequent = uniqueOptions.filter(num => freq[num] === maxCount);
-
-  if (mostFrequent.length > 1) {
-    // Tie: take the average of the tied options, then floor
-    const avg = mostFrequent.reduce((sum, n) => sum + n, 0) / mostFrequent.length;
-    return Math.floor(avg);
-  }
-
-  // 4. One option is most frequent
-  return mostFrequent[0];
-};
-
-const getStageDetails = (stage: number) => {
-  const stageDetails = {
-    1: {
-      title: "Stage 1",
-      subtitle: "Manual & Fragmented",
-      description: "Diagnostic reviews, quick-win automations, books clean-up, MIS services",
-      problems: [
-        "Heavy reliance on manual Excel processes",
-        "Basic accounting system with limited integration",
-        "Excessive manual work in finance operations",
-        "No documented standard operating procedures"
-      ],
-      solutions: [
-        "Conduct diagnostic review of current processes",
-        "Implement quick-win automation solutions",
-        "Clean up and organize financial books",
-        "Establish basic MIS reporting services"
-      ]
-    },
-    2: {
-      title: "Stage 2",
-      subtitle: "Standardised & Controlled",
-      description: "Finance process standardisation, data clean-ups, ERP fitment/rollout, FPA as a service",
-      problems: [
-        "Basic dashboards without real-time data",
-        "Patchwork systems operating in silos",
-        "Mostly manual work with basic ERP accounting",
-        "Consistent processes but not linked to best practices"
-      ],
-      solutions: [
-        "Standardize finance processes across organization",
-        "Conduct comprehensive data clean-up",
-        "Assess and implement proper ERP fitment",
-        "Provide FPA (Financial Planning & Analysis) as a service"
-      ]
-    },
-    3: {
-      title: "Stage 3",
-      subtitle: "Automated & Integrated",
-      description: "Full ERP implementation, automation scripts, RPA, reporting automation",
-      problems: [
-        "Real-time data flows between spreadsheets need optimization",
-        "Sophisticated ERP but lacks integrations",
-        "Core finance on ERP but reconciliations done outside",
-        "Best practices adopted but adherence uncertain"
-      ],
-      solutions: [
-        "Implement full ERP system integration",
-        "Deploy automation scripts for routine tasks",
-        "Introduce RPA (Robotic Process Automation)",
-        "Automate reporting processes completely"
-      ]
-    },
-    4: {
-      title: "Stage 4",
-      subtitle: "Data-Driven & Predictive",
-      description: "FPA as a service, CFO support, predictive analytics automation",
-      problems: [
-        "Dynamic MIS and macros need enhancement",
-        "Highly automated but integration gaps exist",
-        "Completely automated but scope for improvement",
-        "Documented best practices need better adherence monitoring"
-      ],
-      solutions: [
-        "Enhance FPA services with advanced analytics",
-        "Provide CFO support and strategic guidance",
-        "Implement predictive analytics automation",
-        "Deploy advanced business intelligence tools"
-      ]
-    },
-    5: {
-      title: "Stage 5",
-      subtitle: "Strategic & Scalable",
-      description: "Technical Acc, Outsourcing, IFRS/US GAAP advisory, legacy ERP overhaul",
-      problems: [
-        "Predictive analysis capabilities need refinement",
-        "Only financial statement preparation remains manual",
-        "Investment-ready processes need global alignment",
-        "IFC/ICFR controls need continuous improvement"
-      ],
-      solutions: [
-        "Provide technical accounting expertise",
-        "Offer comprehensive finance outsourcing",
-        "Implement IFRS/US GAAP advisory services",
-        "Overhaul legacy ERP systems for global standards"
-      ]
-    }
-  };
-  return stageDetails[stage as keyof typeof stageDetails] || stageDetails[1];
-};
-
 const Index = () => {
   const [currentStage, setCurrentStage] = useState<'intro' | 'questionnaire' | 'personal-details' | 'results'>('intro');
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -362,21 +340,13 @@ const Index = () => {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string[]>>({});
   const [identifiedProblems, setIdentifiedProblems] = useState<string[]>([]);
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
-  const [feedbackData, setFeedbackData] = useState({ rating: 0, reaction: '', message: '' });
+  const [feedbackData, setFeedbackData] = useState({ rating: 0, reaction: '', message: '', profilePhoto: '' });
   const [showTopNotification, setShowTopNotification] = useState<{ title: string; message: string } | null>(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showFirework, setShowFirework] = useState(false);
   const [latestFeedback, setLatestFeedback] = useState<Feedback | null>(null);
   const [emojiFireworks, setEmojiFireworks] = useState<string[]>([]);
-  const [stage, setStage] = useState<number>(1); // <-- add this state
-  const [stageDetails, setStageDetails] = useState<StageDetails>(getStageDetails(1));
-
-  // API hook for form submission
-  const financialAssessmentMutation = useFinancialAssessmentSubmission();
-  const reviewSubmissionMutation = useReviewSubmission();
-
-  // Store respondent ID for review submission
-  const [respondentId, setRespondentId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load feedback from localStorage on component mount
   useEffect(() => {
@@ -430,38 +400,122 @@ const Index = () => {
     });
   };
 
+  const calculateStage = () => {
+    // Convert selected answer IDs to numbers (1-5) and calculate average
+    const values: number[] = [];
+    Object.entries(selectedAnswers).forEach(([questionId, optionIds]) => {
+      optionIds.forEach(optionId => {
+        values.push(parseInt(optionId));
+      });
+    });
+    
+    if (values.length === 0) return 1;
+    
+    const average = values.reduce((sum, val) => sum + val, 0) / values.length;
+    return Math.round(average);
+  };
+
+  const getStageDetails = (stage: number) => {
+    const stageDetails = {
+      1: {
+        title: "Stage 1",
+        subtitle: "Manual & Fragmented",
+        description: "Diagnostic reviews, quick-win automations, books clean-up, MIS services",
+        problems: [
+          "Heavy reliance on manual Excel processes",
+          "Basic accounting system with limited integration", 
+          "Excessive manual work in finance operations",
+          "No documented standard operating procedures"
+        ],
+        solutions: [
+          "Conduct diagnostic review of current processes",
+          "Implement quick-win automation solutions",
+          "Clean up and organize financial books", 
+          "Establish basic MIS reporting services"
+        ]
+      },
+      2: {
+        title: "Stage 2",
+        subtitle: "Standardised & Controlled",
+        description: "Finance process standardisation, data clean-ups, ERP fitment/rollout, FPA as a service",
+        problems: [
+          "Basic dashboards without real-time data",
+          "Patchwork systems operating in silos",
+          "Mostly manual work with basic ERP accounting", 
+          "Consistent processes but not linked to best practices"
+        ],
+        solutions: [
+          "Standardize finance processes across organization",
+          "Conduct comprehensive data clean-up",
+          "Assess and implement proper ERP fitment",
+          "Provide FPA (Financial Planning & Analysis) as a service"
+        ]
+      },
+      3: {
+        title: "Stage 3", 
+        subtitle: "Automated & Integrated",
+        description: "Full ERP implementation, automation scripts, RPA, reporting automation",
+        problems: [
+          "Real-time data flows between spreadsheets need optimization",
+          "Sophisticated ERP but lacks integrations",
+          "Core finance on ERP but reconciliations done outside",
+          "Best practices adopted but adherence uncertain"
+        ],
+        solutions: [
+          "Implement full ERP system integration",
+          "Deploy automation scripts for routine tasks", 
+          "Introduce RPA (Robotic Process Automation)",
+          "Automate reporting processes completely"
+        ]
+      },
+      4: {
+        title: "Stage 4",
+        subtitle: "Data-Driven & Predictive", 
+        description: "FPA as a service, CFO support, predictive analytics automation",
+        problems: [
+          "Dynamic MIS and macros need enhancement",
+          "Highly automated but integration gaps exist",
+          "Completely automated but scope for improvement",
+          "Documented best practices need better adherence monitoring"
+        ],
+        solutions: [
+          "Enhance FPA services with advanced analytics",
+          "Provide CFO support and strategic guidance",
+          "Implement predictive analytics automation",
+          "Deploy advanced business intelligence tools"
+        ]
+      },
+      5: {
+        title: "Stage 5",
+        subtitle: "Strategic & Scalable",
+        description: "Technical Acc, Outsourcing, IFRS/US GAAP advisory, legacy ERP overhaul", 
+        problems: [
+          "Predictive analysis capabilities need refinement",
+          "Only financial statement preparation remains manual",
+          "Investment-ready processes need global alignment",
+          "IFC/ICFR controls need continuous improvement"
+        ],
+        solutions: [
+          "Provide technical accounting expertise",
+          "Offer comprehensive finance outsourcing",
+          "Implement IFRS/US GAAP advisory services",
+          "Overhaul legacy ERP systems for global standards"
+        ]
+      }
+    };
+    
+    return stageDetails[stage as keyof typeof stageDetails] || stageDetails[1];
+  };
+
   const handleNext = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
       showNotification("🎯 Phase Complete!", `Moving to phase ${currentQuestion + 2} of ${questions.length}`);
     } else {
-      // Check if at least one option is selected across all questions before proceeding
-      const hasSelectedOptions = Object.keys(selectedAnswers).some(questionId => 
-        selectedAnswers[questionId] && selectedAnswers[questionId].length > 0
-      );
-
-      if (!hasSelectedOptions) {
-        showNotification("Mission Planning Required", "Please select at least one option from any question to proceed with your mission brief.");
-        return;
-      }
-
-      // Compile problems and move to personal details
-      const problems: string[] = [];
-      Object.entries(selectedAnswers).forEach(([questionId, optionIds]) => {
-        const question = questions.find(q => q.id === questionId);
-        optionIds.forEach(optionId => {
-          const option = question?.options.find(o => o.id === optionId);
-          if (option) {
-            problems.push(option.problem);
-          }
-        });
-      });
-      // Remove duplicates by converting to Set and back to array
-      const uniqueProblems = [...new Set(problems)];
-      console.log('All problems found:', problems);
-      console.log('Unique problems after deduplication:', uniqueProblems);
-      console.log('Unique problems length:', uniqueProblems.length);
-      setIdentifiedProblems(uniqueProblems);
+      // Calculate stage and get stage-based content
+      const stage = calculateStage();
+      const stageDetails = getStageDetails(stage);
+      setIdentifiedProblems(stageDetails.problems);
       setCurrentStage('personal-details');
     }
   };
@@ -471,115 +525,20 @@ const Index = () => {
       setCurrentQuestion(prev => prev + 1);
       showNotification("⏭️ Skipped Phase", "Moving to the next phase of your heist plan.");
     } else {
-      // Check if at least one option is selected across all questions before proceeding
-      const hasSelectedOptions = Object.keys(selectedAnswers).some(questionId => 
-        selectedAnswers[questionId] && selectedAnswers[questionId].length > 0
-      );
-
-      if (!hasSelectedOptions) {
-        showNotification("Mission Planning Required", "Please select at least one option from any question to proceed with your mission brief.");
-        return;
-      }
-
-      const problems: string[] = [];
-      Object.entries(selectedAnswers).forEach(([questionId, optionIds]) => {
-        const question = questions.find(q => q.id === questionId);
-        optionIds.forEach(optionId => {
-          const option = question?.options.find(o => o.id === optionId);
-          if (option) {
-            problems.push(option.problem);
-          }
-        });
-      });
-      // Remove duplicates by converting to Set and back to array
-      const uniqueProblems = [...new Set(problems)];
-      setIdentifiedProblems(uniqueProblems);
+      // Calculate stage and get stage-based content for skipped answers (default to stage 1)
+      const stage = 1;
+      const stageDetails = getStageDetails(stage);
+      setIdentifiedProblems(stageDetails.problems);
       setCurrentStage('personal-details');
     }
   };
 
-  const handlePersonalDetailsSubmit = async () => {
+  const handlePersonalDetailsSubmit = () => {
     if (!personalDetails.fullName || !personalDetails.designation || !personalDetails.companyName) {
       showNotification("Intel Required", "We need all your details to complete the mission brief.");
       return;
     }
-
-    // Check if at least one option is selected across all questions
-    const hasSelectedOptions = Object.keys(selectedAnswers).some(questionId => 
-      selectedAnswers[questionId] && selectedAnswers[questionId].length > 0
-    );
-
-    if (!hasSelectedOptions) {
-      showNotification("Mission Planning Required", "Please select at least one option from the questionnaire to proceed with your mission brief.");
-      return;
-    }
-
-    try {
-      // Transform selectedAnswers to include full question and answer details
-      const questionsWithResponses = Object.entries(selectedAnswers).map(([questionId, optionIds]) => {
-        const question = questions.find(q => q.id === questionId);
-        if (!question) return null;
-
-        const selectedOptions = optionIds.map(optionId => {
-          const option = question.options.find(o => o.id === optionId);
-          return option ? {
-            id: optionId,
-            text: option.text,
-            description: option.description,
-            problem: option.problem
-          } : null;
-        }).filter(Boolean);
-
-        return {
-          questionId,
-          questionText: question.text,
-          questionDescription: question.description,
-          multiSelect: question.multiSelect,
-          selectedOptions
-        };
-      }).filter(Boolean);
-
-      // Submit the form data to your backend
-      const result = await financialAssessmentMutation.mutateAsync({
-        fullName: personalDetails.fullName,
-        designation: personalDetails.designation,
-        companyName: personalDetails.companyName,
-        selectedAnswers: selectedAnswers, // Keep original for compatibility
-        questionsWithResponses: questionsWithResponses, // Add detailed responses
-        identifiedProblems: identifiedProblems,
-      });
-
-      console.log('Form submitted successfully:', result);
-      
-      // Extract respondent ID from the response to use for review submission
-      if (result.data && result.data.length > 0) {
-        const submissionData = result.data[0];
-        console.log('Submission data:', submissionData);
-        
-        // Check if respondentId is directly available in the response
-        if (submissionData.respondentId) {
-          setRespondentId(submissionData.respondentId);
-          console.log('Respondent ID extracted from response:', submissionData.respondentId);
-        } else {
-          console.error('Could not extract respondent ID from response:', submissionData);
-          console.error('Available fields in response:', Object.keys(submissionData));
-        }
-      } else {
-        console.error('No data in API response:', result);
-      }
-      
-      showNotification("🎯 Mission Brief Generated!", "Your data has been saved successfully!");
-      
-      // Calculate stage and set stage details for results
-      const calculatedStage = calculateStage(selectedAnswers);
-      setStage(calculatedStage);
-      setStageDetails(getStageDetails(calculatedStage));
-      // Move to results stage
-      setCurrentStage('results');
-    } catch (error) {
-      console.error('Form submission failed:', error);
-      showNotification("❌ Submission Failed", "Please try again or contact support.");
-    }
+    setCurrentStage('results');
   };
 
   const handleReattempt = () => {
@@ -589,16 +548,45 @@ const Index = () => {
     setSelectedAnswers({});
     setIdentifiedProblems([]);
     setPersonalDetails({ fullName: '', designation: '', companyName: '' });
-    setRespondentId(null);
     showNotification("🔄 Mission Reset", "Starting fresh mission planning!");
   };
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    // Removed profile photo upload functionality
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFeedbackData(prev => ({ ...prev, profilePhoto: e.target?.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleCameraCapture = () => {
-    // Removed camera capture functionality
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.play();
+        
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        video.onloadedmetadata = () => {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          context?.drawImage(video, 0, 0);
+          
+          const imageData = canvas.toDataURL('image/png');
+          setFeedbackData(prev => ({ ...prev, profilePhoto: imageData }));
+          
+          stream.getTracks().forEach(track => track.stop());
+        };
+      })
+      .catch(err => {
+        console.error('Error accessing camera:', err);
+        showNotification("Camera Error", "Unable to access camera. Please try uploading a photo instead.");
+      });
   };
 
   const triggerEmojiFirework = (emoji: string) => {
@@ -609,73 +597,39 @@ const Index = () => {
     }, 2000);
   };
 
-  const handleFeedbackSubmit = async () => {
-    console.log('Feedback submission started', {
-      rating: feedbackData.rating,
-      respondentId: respondentId,
-      personalDetails: personalDetails
-    });
-    
+  const handleFeedbackSubmit = () => {
     if (feedbackData.rating === 0) {
       showNotification("Rating Required", "Please provide a rating for the assessment.");
       return;
     }
 
-    if (!respondentId) {
-      console.error('No respondent ID available for review submission');
-      showNotification("Error", "Unable to submit review. Please complete the assessment first.");
-      return;
+    const feedback: Feedback = {
+      id: Date.now().toString(),
+      name: personalDetails.fullName,
+      rating: feedbackData.rating,
+      reaction: feedbackData.reaction,
+      message: feedbackData.message,
+      timestamp: Date.now(),
+      profilePhoto: feedbackData.profilePhoto
+    };
+
+    const updatedFeedback = [...feedbackList, feedback];
+    setFeedbackList(updatedFeedback);
+    setLatestFeedback(feedback);
+    localStorage.setItem('finance-assessment-feedback', JSON.stringify(updatedFeedback));
+    
+    // Trigger emoji firework
+    if (feedbackData.reaction) {
+      triggerEmojiFirework(feedbackData.reaction);
     }
-
-    try {
-      console.log('Submitting review with data:', {
-        respondentId: respondentId,
-        rating: feedbackData.rating,
-        reaction: feedbackData.reaction,
-        feedback: feedbackData.message,
-      });
-      
-      // Submit review to API
-      const result = await reviewSubmissionMutation.mutateAsync({
-        respondentId: respondentId,
-        rating: feedbackData.rating,
-        reaction: feedbackData.reaction,
-        feedback: feedbackData.message,
-      });
-      
-      console.log('Review submission result:', result);
-
-      // Also save to localStorage for UI feedback display
-      const feedback: Feedback = {
-        id: Date.now().toString(),
-        name: personalDetails.fullName,
-        rating: feedbackData.rating,
-        reaction: feedbackData.reaction,
-        message: feedbackData.message,
-        timestamp: Date.now()
-      };
-
-      const updatedFeedback = [...feedbackList, feedback];
-      setFeedbackList(updatedFeedback);
-      setLatestFeedback(feedback);
-      localStorage.setItem('finance-assessment-feedback', JSON.stringify(updatedFeedback));
-      
-      // Trigger emoji firework
-      if (feedbackData.reaction) {
-        triggerEmojiFirework(feedbackData.reaction);
-      }
-      
-      // Trigger general firework effect
-      setShowFirework(true);
-      setTimeout(() => setShowFirework(false), 2000);
-      
-      setFeedbackData({ rating: 0, reaction: '', message: '' });
-      setShowFeedbackModal(false);
-      showNotification("Thank you!", "Your feedback has been submitted successfully.");
-    } catch (error) {
-      console.error('Failed to submit review:', error);
-      showNotification("Error", "Failed to submit review. Please try again.");
-    }
+    
+    // Trigger general firework effect
+    setShowFirework(true);
+    setTimeout(() => setShowFirework(false), 2000);
+    
+    setFeedbackData({ rating: 0, reaction: '', message: '', profilePhoto: '' });
+    setShowFeedbackModal(false);
+    showNotification("Thank you!", "Your feedback has been submitted successfully.");
   };
 
   const getProgress = () => {
@@ -748,11 +702,19 @@ const Index = () => {
                 <div className="flex items-start space-x-4">
                   {/* Profile Photo */}
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center border-2 border-purple-300/50">
-                      <span className="text-lg font-bold">
-                        {latestFeedback.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
+                    {latestFeedback.profilePhoto ? (
+                      <img 
+                        src={latestFeedback.profilePhoto} 
+                        alt={latestFeedback.name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-purple-300/50"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center border-2 border-purple-300/50">
+                        <span className="text-lg font-bold">
+                          {latestFeedback.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
@@ -1028,12 +990,6 @@ const Index = () => {
   }
 
   if (currentStage === 'personal-details') {
-    // Calculate answered questions for display
-    const answeredQuestions = Object.keys(selectedAnswers).filter(questionId => 
-      selectedAnswers[questionId] && selectedAnswers[questionId].length > 0
-    ).length;
-    const totalQuestions = questions.length;
-
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 relative overflow-hidden">
         {/* Top notification */}
@@ -1055,15 +1011,6 @@ const Index = () => {
               <span className="text-lg font-bold text-purple-100">
                 🎯 Mission Intel Required!
               </span>
-            </div>
-            
-            {/* Progress indicator */}
-            <div className="mt-4 mb-6">
-              <div className="bg-slate-800/50 rounded-full px-4 py-2 inline-block border border-slate-600/30">
-                <span className="text-sm text-purple-200">
-                  📊 Questions Answered: <span className="font-bold text-purple-100">{answeredQuestions}</span>/{totalQuestions}
-                </span>
-              </div>
             </div>
           </div>
 
@@ -1117,20 +1064,10 @@ const Index = () => {
           <div className="flex justify-center mt-8">
             <Button 
               onClick={handlePersonalDetailsSubmit}
-              disabled={financialAssessmentMutation.isPending}
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              {financialAssessmentMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 w-4 h-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  🚀 Generate Mission Brief
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </>
-              )}
+              🚀 Generate Mission Brief
+              <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           </div>
         </div>
@@ -1139,14 +1076,20 @@ const Index = () => {
   }
 
   if (currentStage === 'results') {
-    // Use stageDetails for display
-    const stageSolutions = stageDetails.solutions.map((solution: string, index: number) => ({
+    // Calculate stage based on selected answers
+    const stage = calculateStage();
+    const stageDetails = getStageDetails(stage);
+    
+    // Use stage-based solutions
+    const stageSolutions = stageDetails.solutions.map((solution, index) => ({
       problem: stageDetails.problems[index] || `Challenge ${index + 1}`,
       icon: Target,
       solution: solution,
       heistDescription: `Strategic implementation for ${stageDetails.subtitle.toLowerCase()}.`
     }));
+
     const solutionsToShow = stageSolutions;
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 relative overflow-hidden">
         {/* Top notification */}
@@ -1160,6 +1103,7 @@ const Index = () => {
             </Card>
           </div>
         )}
+
         {/* Feedback Modal with Profile Photo Upload */}
         {showFeedbackModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1184,6 +1128,62 @@ const Index = () => {
                 </Button>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Profile Photo Section */}
+                <div className="text-center">
+                  <Label className="text-sm font-medium text-slate-700 mb-3 block">Add your profile photo (optional)</Label>
+                  <div className="flex items-center justify-center space-x-4">
+                    {feedbackData.profilePhoto ? (
+                      <div className="relative">
+                        <img 
+                          src={feedbackData.profilePhoto} 
+                          alt="Profile"
+                          className="w-20 h-20 rounded-full object-cover border-4 border-purple-200"
+                        />
+                        <button
+                          onClick={() => setFeedbackData(prev => ({ ...prev, profilePhoto: '' }))}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center text-white text-2xl font-bold border-4 border-purple-200">
+                        {personalDetails.fullName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-col space-y-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center space-x-2"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>Upload</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCameraCapture}
+                        className="flex items-center space-x-2"
+                      >
+                        <Camera className="w-4 h-4" />
+                        <span>Selfie</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <Label className="text-sm font-medium text-slate-700 mb-3 block">How would you rate this assessment?</Label>
                   <div className="flex space-x-2 justify-center">
@@ -1266,11 +1266,13 @@ const Index = () => {
             </Card>
           </div>
         )}
+
         {/* Animated background */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-20 left-20 w-64 h-64 bg-purple-500 rounded-full filter blur-3xl animate-pulse"></div>
           <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-500 rounded-full filter blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
         </div>
+
         <div className="max-w-6xl mx-auto py-8 relative z-10">
           <div className="text-center mb-12">
             <div className="inline-flex items-center space-x-3 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 backdrop-blur-sm px-8 py-4 rounded-full mb-6 border border-yellow-500/30">
@@ -1279,42 +1281,114 @@ const Index = () => {
                 🏆 {stageDetails.title}: {stageDetails.subtitle}
               </span>
             </div>
+            
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-white mb-4">{stageDetails.description}</h2>
             </div>
+            
             <p className="text-xl text-purple-200 max-w-3xl mx-auto animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              Congratulations, {personalDetails.fullName}! Based on your responses, {personalDetails.companyName} is at {stageDetails.title}.
+              Congratulations, {personalDetails.fullName}! Based on your responses, {personalDetails.companyName} is at {stageDetails.title}. Here's your customized roadmap:
             </p>
           </div>
+
           {/* Strategic Solutions or Congratulations */}
           <div className="space-y-6 mb-12 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <Card className="shadow-xl relative overflow-hidden bg-gradient-to-br from-slate-800/90 to-purple-900/90 backdrop-blur-lg text-white border-2 border-purple-600/50 max-w-4xl mx-auto">
-              {/* <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-blue-500"></div> */}
-              {/* <CardHeader className="pb-4 text-center">
-                <div className="flex items-center justify-center space-x-4 mb-4">
-                  <div className="p-6 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full shadow-lg">
-                    <Trophy className="w-12 h-12 text-white" />
-                  </div>
+            {identifiedProblems.length > 0 ? (
+              <>
+                <h2 className="text-3xl font-bold text-white text-center mb-8">🎯 Your Custom Strategic Solutions</h2>
+                <div className="grid gap-6">
+                  {solutionsToShow.map((solution, index) => {
+                    if (!solution) return null;
+                    
+                    const IconComponent = solution.icon;
+                    
+                    return (
+                      <Card key={index} className="shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-[1.02] relative overflow-hidden bg-gradient-to-br from-slate-800/90 to-purple-900/90 backdrop-blur-lg text-white border-2 border-purple-600/50">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-blue-500"></div>
+                        <CardHeader className="pb-4">
+                          <div className="flex items-start space-x-4">
+                            <div className="p-4 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl shadow-lg">
+                              <IconComponent className="w-8 h-8 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <CardTitle className="text-xl font-bold text-white mb-2">
+                                🎯 {solution.problem}
+                              </CardTitle>
+                              <Badge variant="outline" className="text-purple-200 border-purple-400 bg-purple-800/50">
+                                ⚡ Strategic Solution
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <p className="text-slate-200 text-lg leading-relaxed">
+                              <span className="font-semibold text-purple-300">🚀 Our Approach:</span> {solution.solution}
+                            </p>
+                            <div className="bg-slate-800/50 p-4 rounded-lg border border-purple-600/30">
+                              <p className="text-purple-200 text-sm font-medium mb-1">🕴️ Mission Execution:</p>
+                              <p className="text-white">{solution.heistDescription}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
-                <CardTitle className="text-2xl font-bold text-white mb-2">
-                  {stageDetails.title}: {stageDetails.subtitle}
-                </CardTitle>
-                <Badge variant="outline" className="text-purple-200 border-purple-400 bg-purple-800/50">
-                  {stageDetails.description}
-                </Badge>
-              </CardHeader> */}
-              {/* <CardContent className="text-center">
-                <div className="space-y-6">
-                  <div className="text-2xl font-bold text-white mb-2">
-                    {stageDetails.title}: {stageDetails.subtitle}
-                  </div>
-                  <div className="text-lg text-purple-200 mb-2">
-                    {stageDetails.description}
-                  </div>
-                </div>
-              </CardContent> */}
-            </Card>
+              </>
+            ) : (
+              <>
+                <h2 className="text-3xl font-bold text-white text-center mb-8">🎉 Excellent Financial Position!</h2>
+                <Card className="shadow-xl relative overflow-hidden bg-gradient-to-br from-green-800/90 to-emerald-900/90 backdrop-blur-lg text-white border-2 border-green-600/50 max-w-4xl mx-auto">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-emerald-500"></div>
+                  <CardHeader className="pb-4 text-center">
+                    <div className="flex items-center justify-center space-x-4 mb-4">
+                      <div className="p-6 bg-gradient-to-br from-green-600 to-emerald-600 rounded-full shadow-lg">
+                        <Trophy className="w-12 h-12 text-white" />
+                      </div>
+                    </div>
+                    <CardTitle className="text-2xl font-bold text-white mb-2">
+                      🏆 Outstanding Financial Management!
+                    </CardTitle>
+                    <Badge variant="outline" className="text-green-200 border-green-400 bg-green-800/50">
+                      ✨ No Action Required
+                    </Badge>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <div className="space-y-6">
+                      <div className="text-6xl mb-4">🎯💰✨</div>
+                      <p className="text-green-100 text-xl leading-relaxed">
+                        Congratulations, {personalDetails.fullName}! Your financial strategy appears to be on solid ground. 
+                        You've demonstrated excellent financial discipline and strategic thinking.
+                      </p>
+                      <div className="bg-green-800/50 p-6 rounded-lg border border-green-600/30">
+                        <p className="text-green-200 text-lg font-medium mb-2">🌟 Your Financial Excellence:</p>
+                        <p className="text-white text-lg">
+                          Based on your responses, {personalDetails.companyName} appears to have strong financial foundations. 
+                          Keep up the excellent work! Consider our consultation if you want to explore growth opportunities.
+                        </p>
+                      </div>
+                      <div className="flex justify-center space-x-4 pt-4">
+                        <div className="text-center">
+                          <div className="text-3xl mb-2">🎉</div>
+                          <p className="text-green-200 text-sm">Well Done</p>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl mb-2">💪</div>
+                          <p className="text-green-200 text-sm">Strong Position</p>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-3xl mb-2">🚀</div>
+                          <p className="text-green-200 text-sm">Ready to Scale</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
+
           {/* Call to Action */}
           <div className="text-center animate-fade-in" style={{ animationDelay: '0.6s' }}>
             <Card className="max-w-4xl mx-auto bg-gradient-to-br from-purple-800/80 to-blue-800/80 backdrop-blur-lg border-2 border-purple-500/50 shadow-2xl">
@@ -1324,6 +1398,7 @@ const Index = () => {
                   Your crew is assembled, the plan is set, and the target is in sight. 
                   Let's meet your team and finalize the execution strategy.
                 </p>
+                
                 <div className="flex flex-wrap justify-center gap-4">
                   <Button 
                     onClick={handleReattempt}
@@ -1333,6 +1408,7 @@ const Index = () => {
                     <Flame className="mr-2 w-4 h-4" />
                     Reattempt Mission
                   </Button>
+                  
                   <Button 
                     onClick={() => setShowFeedbackModal(true)}
                     className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-6 py-3 transition-all duration-300"
@@ -1340,6 +1416,7 @@ const Index = () => {
                     <Flame className="mr-2 w-4 h-4" />
                     Share Feedback
                   </Button>
+                  
                   <Button 
                     onClick={() => window.open('https://calendly.com/contetrapvtlimited/30min?month=2023-12', '_blank')}
                     className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 text-white px-8 py-3 text-lg font-bold rounded-xl shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105 border border-emerald-400/30 relative overflow-hidden group"
@@ -1350,6 +1427,7 @@ const Index = () => {
                     <ExternalLink className="ml-2 w-4 h-4" />
                   </Button>
                 </div>
+                
                 <div className="mt-6">
                   <p className="text-lg text-purple-300">
                     💎 <strong>Limited Time:</strong> Book your strategy session in the next 48 hours and receive a 25% discount on your first mission package.
