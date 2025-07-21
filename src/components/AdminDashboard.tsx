@@ -102,24 +102,71 @@ const ResponsesModal = ({ responses }: { responses: Record<string, unknown> }) =
   );
 };
 
-// Component to display identified problems in popup
-const ProblemsModal = ({ responses }: { responses: Record<string, unknown> }) => {
-  const identifiedProblems = (responses as Record<string, unknown>)?.identifiedProblems as string[] || [];
-  
+// --- Add stage calculation logic from Index.tsx ---
+const calculateStage = (selectedAnswers: Record<string, string[]>) => {
+  const values: number[] = [];
+  Object.values(selectedAnswers).forEach(optionIds => {
+    optionIds.forEach(optionId => {
+      const num = parseInt(optionId);
+      if (!isNaN(num)) values.push(num);
+    });
+  });
+  if (values.length === 0) return 1;
+  const freq: Record<number, number> = {};
+  values.forEach(num => {
+    freq[num] = (freq[num] || 0) + 1;
+  });
+  const uniqueOptions = Object.keys(freq).map(Number);
+  if (uniqueOptions.length === 1) return uniqueOptions[0];
+  if (uniqueOptions.length === values.length) return Math.max(...uniqueOptions);
+  const maxCount = Math.max(...Object.values(freq));
+  const mostFrequent = uniqueOptions.filter(num => freq[num] === maxCount);
+  if (mostFrequent.length > 1) {
+    const avg = mostFrequent.reduce((sum, n) => sum + n, 0) / mostFrequent.length;
+    return Math.floor(avg);
+  }
+  return mostFrequent[0];
+};
+const getStageDetails = (stage: number) => {
+  const stageDetails = {
+    1: {
+      title: "Stage 1",
+      subtitle: "Manual & Fragmented",
+      description: "Diagnostic reviews, quick-win automations, books clean-up, MIS services"
+    },
+    2: {
+      title: "Stage 2",
+      subtitle: "Standardised & Controlled",
+      description: "Finance process standardisation, data clean-ups, ERP fitment/rollout, FPA as a service"
+    },
+    3: {
+      title: "Stage 3",
+      subtitle: "Automated & Integrated",
+      description: "Full ERP implementation, automation scripts, RPA, reporting automation"
+    },
+    4: {
+      title: "Stage 4",
+      subtitle: "Data-Driven & Predictive",
+      description: "FPA as a service, CFO support, predictive analytics automation"
+    },
+    5: {
+      title: "Stage 5",
+      subtitle: "Strategic & Scalable",
+      description: "Technical Acc, Outsourcing, IFRS/US GAAP advisory, legacy ERP overhaul"
+    }
+  };
+  return stageDetails[stage as keyof typeof stageDetails] || stageDetails[1];
+};
+// --- Replace ProblemsModal with ResultStageModal ---
+const ResultStageModal = ({ responses }: { responses: Record<string, unknown> }) => {
+  const selectedAnswers = (responses as Record<string, unknown>)?.assessmentAnswers as Record<string, string[]> || {};
+  const stage = calculateStage(selectedAnswers);
+  const stageDetails = getStageDetails(stage);
   return (
-    <div className="space-y-4 max-h-96 overflow-y-auto">
-      <h3 className="text-lg font-semibold mb-4">Identified Problems</h3>
-      {identifiedProblems.length > 0 ? (
-        <div className="space-y-3">
-          {identifiedProblems.map((problem, index) => (
-            <div key={index} className="bg-red-50 p-4 rounded-lg border-l-4 border-red-400">
-              <div className="font-medium text-red-900">{problem}</div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-gray-500">No problems identified.</p>
-      )}
+    <div className="space-y-4 max-h-96 overflow-y-auto text-center">
+      <h3 className="text-lg font-semibold mb-4">Result Stage</h3>
+      <div className="text-2xl font-bold mb-2">{stageDetails.title}: {stageDetails.subtitle}</div>
+      <div className="text-base text-gray-700 mb-2">{stageDetails.description}</div>
     </div>
   );
 };
@@ -416,6 +463,7 @@ export const AdminDashboard = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Company</TableHead>
+                <TableHead>Phone Number</TableHead>
                 <TableHead>Designation</TableHead>
                 <TableHead>Submission Date</TableHead>
                 <TableHead>Status</TableHead>
@@ -433,6 +481,7 @@ export const AdminDashboard = () => {
                     <TableCell className="font-medium">{submission.respondent.name}</TableCell>
                     <TableCell>{submission.respondent.email}</TableCell>
                     <TableCell>{submission.respondent.companyName}</TableCell>
+                    <TableCell>{personalDetails.phoneNumber || 'N/A'}</TableCell>
                     <TableCell>{personalDetails.designation || 'N/A'}</TableCell>
                     <TableCell>{new Date(submission.submissionDate).toLocaleDateString()}</TableCell>
                     <TableCell>
@@ -486,14 +535,14 @@ export const AdminDashboard = () => {
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm">
-                              View Problems
+                              View Result Stage
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl">
                             <DialogHeader>
-                              <DialogTitle>Problems for {submission.respondent.name}</DialogTitle>
+                              <DialogTitle>Result Stage for {submission.respondent.name}</DialogTitle>
                             </DialogHeader>
-                            <ProblemsModal responses={responses} />
+                            <ResultStageModal responses={responses} />
                           </DialogContent>
                         </Dialog>
 

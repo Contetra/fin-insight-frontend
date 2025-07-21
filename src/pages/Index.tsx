@@ -12,6 +12,7 @@ interface PersonalDetails {
   fullName: string;
   designation: string;
   companyName: string;
+  phoneNumber: string;
 }
 
 interface Question {
@@ -358,7 +359,7 @@ const getStageDetails = (stage: number) => {
 const Index = () => {
   const [currentStage, setCurrentStage] = useState<'intro' | 'questionnaire' | 'personal-details' | 'results'>('intro');
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [personalDetails, setPersonalDetails] = useState<PersonalDetails>({ fullName: '', designation: '', companyName: '' });
+  const [personalDetails, setPersonalDetails] = useState<PersonalDetails>({ fullName: '', designation: '', companyName: '', phoneNumber: '' });
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string[]>>({});
   const [identifiedProblems, setIdentifiedProblems] = useState<string[]>([]);
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
@@ -499,8 +500,8 @@ const Index = () => {
   };
 
   const handlePersonalDetailsSubmit = async () => {
-    if (!personalDetails.fullName || !personalDetails.designation || !personalDetails.companyName) {
-      showNotification("Intel Required", "We need all your details to complete the mission brief.");
+    if (!personalDetails.fullName || !personalDetails.companyName) {
+      showNotification("Intel Required", "Full Name and Company Name are required to complete the mission brief.");
       return;
     }
 
@@ -544,6 +545,7 @@ const Index = () => {
         fullName: personalDetails.fullName,
         designation: personalDetails.designation,
         companyName: personalDetails.companyName,
+        phoneNumber: personalDetails.phoneNumber,
         selectedAnswers: selectedAnswers, // Keep original for compatibility
         questionsWithResponses: questionsWithResponses, // Add detailed responses
         identifiedProblems: identifiedProblems,
@@ -588,7 +590,7 @@ const Index = () => {
     setCurrentQuestion(0);
     setSelectedAnswers({});
     setIdentifiedProblems([]);
-    setPersonalDetails({ fullName: '', designation: '', companyName: '' });
+    setPersonalDetails({ fullName: '', designation: '', companyName: '', phoneNumber: '' });
     setRespondentId(null);
     showNotification("🔄 Mission Reset", "Starting fresh mission planning!");
   };
@@ -808,17 +810,16 @@ const Index = () => {
           <div className="space-y-8">
             <div className="inline-flex items-center space-x-3 bg-gradient-to-r from-purple-800/80 to-blue-800/80 backdrop-blur-sm text-purple-100 px-6 py-3 rounded-full text-sm font-medium border border-purple-500/30 shadow-lg animate-fade-in">
               <Trophy className="w-5 h-5 animate-bounce" />
-              <span>🎮 Elite Strategy Assessment</span>
+              <span>🎮 The 5-Level Finance Maturity Arch</span>
             </div>
             
             <h1 className="text-6xl font-bold text-white leading-tight animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              Plan the Perfect 
-              <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-green-400 bg-clip-text text-transparent animate-pulse"> Creative Heist</span>
+              Diagnose | Decode |
+              <span className="bg-gradient-to-r from-purple-400 via-blue-400 to-green-400 bg-clip-text text-transparent animate-pulse">Transform</span>
             </h1>
             
             <p className="text-xl text-purple-200 leading-relaxed max-w-3xl mx-auto animate-fade-in" style={{ animationDelay: '0.4s' }}>
-              🚀 You're the mastermind. It's time to steal back your brand's power with precision strategy and flawless execution. 
-              This mission won't be easy, but you're not alone.
+              🚀 Know exactly where your business stands and what needs fixing, in minutes.
             </p>
           </div>
 
@@ -831,7 +832,7 @@ const Index = () => {
                 <CardTitle className="text-sm text-white">Assemble Crew</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <p className="text-purple-300 text-xs">Recruit the perfect specialists for your mission</p>
+                <p className="text-purple-300 text-xs">Are you stuck juggling disconnected systems across teams?</p>
               </CardContent>
             </Card>
 
@@ -843,7 +844,7 @@ const Index = () => {
                 <CardTitle className="text-sm text-white">Plan Entry</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <p className="text-blue-300 text-xs">Identify the perfect infiltration point</p>
+                <p className="text-blue-300 text-xs">Is excessive manual work holding back execution speed?</p>
               </CardContent>
             </Card>
 
@@ -855,7 +856,7 @@ const Index = () => {
                 <CardTitle className="text-sm text-white">Secure Loot</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <p className="text-green-300 text-xs">Define your strategic objectives</p>
+                <p className="text-green-300 text-xs">Are you making key decisions without reliable, real-time data?</p>
               </CardContent>
             </Card>
 
@@ -867,7 +868,7 @@ const Index = () => {
                 <CardTitle className="text-sm text-white">Execute Plan</CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <p className="text-orange-300 text-xs">Launch your strategic campaign</p>
+                <p className="text-orange-300 text-xs">Is your organization investor-ready or simply operational?</p>
               </CardContent>
             </Card>
           </div>
@@ -922,12 +923,12 @@ const Index = () => {
             <div className="text-center mb-6">
               <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-800/80 to-blue-800/80 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium mb-4 border border-purple-500/30">
                 <Eye className="w-4 h-4 text-purple-300" />
-                <span className="text-purple-100">🕴️ Planning the Perfect Heist</span>
+                <span className="text-purple-100">🕴️ We don’t just diagnose we fix it.</span>
               </div>
               <h1 className="text-3xl font-bold text-white mb-2">
-                You're the mastermind. It's time to plan the perfect creative heist to steal back your brand's power.
+                In just a minute, we’ll pinpoint where your business stands and how our ERP, Automation, FP&A, and Governance services can unlock your next level.
               </h1>
-              <p className="text-purple-200">This mission won't be easy, but you're not alone. Let's build your crew and map the plan.</p>
+              <p className="text-purple-200">Faster ERP. Sharper dashboards. Smoother processes. Smarter decisions.</p>
             </div>
             
             {/* Progress bar only */}
@@ -1053,10 +1054,9 @@ const Index = () => {
             <div className="inline-flex items-center space-x-3 bg-gradient-to-r from-purple-800/80 to-blue-800/80 backdrop-blur-sm px-6 py-3 rounded-full border border-purple-500/30">
               <PartyPopper className="w-6 h-6 text-purple-300" />
               <span className="text-lg font-bold text-purple-100">
-                🎯 Mission Intel Required!
+                🎯 The 5-Level Finance Maturity Arch
               </span>
             </div>
-            
             {/* Progress indicator */}
             <div className="mt-4 mb-6">
               <div className="bg-slate-800/50 rounded-full px-4 py-2 inline-block border border-slate-600/30">
@@ -1072,10 +1072,10 @@ const Index = () => {
             <CardHeader className="pb-6 text-center">
               <CardTitle className="text-2xl font-bold text-white flex items-center justify-center">
                 <PartyPopper className="w-6 h-6 mr-2 text-purple-400" />
-                Mission Intel Required!
+                Almost done!
               </CardTitle>
               <CardDescription className="text-base text-purple-200">
-                🏆 Final details needed to complete your personalized mission brief
+                🏆 Share your details to unlock your personalized diagnostic report,<br /> tailored for your business.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1087,11 +1087,22 @@ const Index = () => {
                   onChange={(e) => setPersonalDetails(prev => ({ ...prev, fullName: e.target.value }))}
                   placeholder="Enter your full name"
                   className="h-12 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-purple-500 backdrop-blur-sm"
+                  required
                 />
               </div>
-              
               <div className="space-y-2">
-                <Label htmlFor="designation" className="text-sm font-medium text-purple-200">Designation *</Label>
+                <Label htmlFor="phoneNumber" className="text-sm font-medium text-purple-200">Phone Number</Label>
+                <Input
+                  id="phoneNumber"
+                  value={personalDetails.phoneNumber}
+                  onChange={(e) => setPersonalDetails(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                  placeholder="Enter your phone number"
+                  className="h-12 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-purple-500 backdrop-blur-sm"
+                  type="tel"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="designation" className="text-sm font-medium text-purple-200">Designation</Label>
                 <Input
                   id="designation"
                   value={personalDetails.designation}
@@ -1100,7 +1111,6 @@ const Index = () => {
                   className="h-12 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-purple-500 backdrop-blur-sm"
                 />
               </div>
-              
               <div className="space-y-2">
                 <Label htmlFor="companyName" className="text-sm font-medium text-purple-200">Company Name *</Label>
                 <Input
@@ -1109,6 +1119,7 @@ const Index = () => {
                   onChange={(e) => setPersonalDetails(prev => ({ ...prev, companyName: e.target.value }))}
                   placeholder="Enter your company name"
                   className="h-12 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-purple-500 backdrop-blur-sm"
+                  required
                 />
               </div>
             </CardContent>
