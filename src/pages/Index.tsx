@@ -1896,11 +1896,11 @@ const Index = () => {
                   {/* Stage-specific callout message */}
                   {(() => {
                     const stageCallout: Record<number, string> = {
-                      1: '▶️ Your next chapter starts with one discussion. Let’s connect.',
-                      2: '▶️ Your systems shouldn’t just support operations, they should fuel growth. Let’s explore how.',
-                      3: '▶️ The systems are in place, now it’s time to lead with data. Let’s have a focused discussion.',
-                      4: '▶️ You’re on the edge of transformative leadership. Let’s discuss what’s next.',
-                      5: '▶️ Let’s have a high-level conversation on driving scale without compromising control.',
+                      1: 'Stage 1 - Diagnostic reviews, quick-win automations, books clean-up, MIS services',
+                      2: 'Stage 2 - Finance process standardisation, data clean-ups, ERP fitment/rollout, FPA as a service',
+                      3: 'Stage 3 - Full ERP implementation, automation scripts, RPA, reporting automation, FPA as a service',
+                      4: 'Stage 4 - FPA as a service, CFO support, predictive analytics, Automation, Diagnostic Reviews',
+                      5: 'Stage 5 - Technical Accounting outsourcing, IFRS/US GAAP advisory, Legacy ERP Overhaul',
                     };
                     return (
                       <p className=" text-[16px] md:text-lg text-purple-300">
@@ -1915,10 +1915,18 @@ const Index = () => {
           {/* Add the Offered Services block at the very bottom of the results page, after the CTA and before the closing tags */}
           <div className="mt-10 mb-12 animate-fade-in" style={{ animationDelay: "0.8s" }}>
             <h3 className="text-2xl font-bold text-emerald-300 mb-4 text-center">Our Offered Services</h3>
-            <div className="max-w-2xl mx-auto bg-slate-800/70 rounded-xl p-6 border border-emerald-400/30 shadow-lg text-lg text-left text-emerald-100 flex items-center gap-2 justify-center">
-              <span className="inline-block w-2 h-2 bg-emerald-400 rounded-full mr-2"></span>
-              {stageDetails.description}
-            </div>
+            <ul className="max-w-2xl mx-auto bg-slate-800/70 rounded-xl p-6 border border-emerald-400/30 shadow-lg text-lg text-left text-emerald-100 flex flex-col gap-2 justify-center">
+              {stageDetails.description.split(',').map((item, idx) => {
+                // Capitalize first letter of each word
+                const capitalized = item.trim().replace(/\b\w/g, c => c.toUpperCase());
+                return (
+                  <li key={idx} className="flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 bg-emerald-400 rounded-full mr-2"></span>
+                    {capitalized}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </div>
       </div>
