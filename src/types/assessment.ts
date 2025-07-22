@@ -2,7 +2,6 @@
 export interface Assessment {
   id: string;
   full_name: string;
-  designation: string;
   company_name: string;
   identified_problems: string[];
   generated_solutions: string[];

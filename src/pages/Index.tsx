@@ -33,6 +33,10 @@ import {
   ExternalLink,
   Star,
   Loader2,
+  RefreshCwOff,
+  FolderSync,
+  Layers,
+  KeyboardOff,
 } from "lucide-react";
 
 
@@ -40,10 +44,10 @@ import {
   useFinancialAssessmentSubmission,
   useReviewSubmission,
 } from "@/hooks/useFormApi";
+import { Layer } from "recharts";
 
 interface PersonalDetails {
   fullName: string;
-  designation: string;
   companyName: string;
   phoneNumber: string;
 }
@@ -557,7 +561,6 @@ const Index = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [personalDetails, setPersonalDetails] = useState<PersonalDetails>({
     fullName: "",
-    designation: "",
     companyName: "",
     phoneNumber: "",
   });
@@ -789,7 +792,6 @@ const Index = () => {
       // Submit the form data to your backend
       const result = await financialAssessmentMutation.mutateAsync({
         fullName: personalDetails.fullName,
-        designation: personalDetails.designation,
         companyName: personalDetails.companyName,
         phoneNumber: personalDetails.phoneNumber,
         selectedAnswers: selectedAnswers, // Keep original for compatibility
@@ -853,7 +855,6 @@ const Index = () => {
     setIdentifiedProblems([]);
     setPersonalDetails({
       fullName: "",
-      designation: "",
       companyName: "",
       phoneNumber: "",
     });
@@ -1149,7 +1150,7 @@ const Index = () => {
             <Card className="border-2 border-purple-500/30 bg-slate-800/50 backdrop-blur-sm hover:border-purple-400/50 transition-all duration-500 hover:shadow-xl hover:shadow-purple-500/20 transform hover:scale-105 group">
               <CardHeader className="text-center pb-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-800 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:animate-bounce">
-                  <Trophy className="w-6 h-6 text-white" />
+                  <RefreshCwOff className="w-6 h-6 text-white" />
                 </div>
                 <CardTitle className="text-sm text-white">
                   Disconnected Systems
@@ -1165,7 +1166,7 @@ const Index = () => {
             <Card className="border-2 border-blue-500/30 bg-slate-800/50 backdrop-blur-sm hover:border-blue-400/50 transition-all duration-500 hover:shadow-xl hover:shadow-blue-500/20 transform hover:scale-105 group">
               <CardHeader className="text-center pb-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:animate-bounce">
-                  <Eye className="w-6 h-6 text-white" />
+                  <KeyboardOff className="w-6 h-6 text-white" />
                 </div>
                 <CardTitle className="text-sm text-white">
                   Manual Work
@@ -1181,7 +1182,7 @@ const Index = () => {
             <Card className="border-2 border-green-500/30 bg-slate-800/50 backdrop-blur-sm hover:border-green-400/50 transition-all duration-500 hover:shadow-xl hover:shadow-green-500/20 transform hover:scale-105 group">
               <CardHeader className="text-center pb-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-green-800 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:animate-bounce">
-                  <Target className="w-6 h-6 text-white" />
+                  <FolderSync className="w-6 h-6 text-white" />
                 </div>
                 <CardTitle className="text-sm text-white">
                   Real-time data
@@ -1197,7 +1198,7 @@ const Index = () => {
             <Card className="border-2 border-orange-500/30 bg-slate-800/50 backdrop-blur-sm hover:border-orange-400/50 transition-all duration-500 hover:shadow-xl hover:shadow-orange-500/20 transform hover:scale-105 group">
               <CardHeader className="text-center pb-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-600 to-orange-800 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:animate-bounce">
-                  <Flame className="w-6 h-6 text-white" />
+                  <Layers className="w-6 h-6 text-white" />
                 </div>
                 <CardTitle className="text-sm text-white">
                   Investor Ready
@@ -1275,11 +1276,12 @@ const Index = () => {
                   🕴️ We don’t just diagnose we fix it.
                 </span>
               </div>
-              <h1 className=" text-[20px] md:text-3xl font-bold text-white mb-2">
-                In just a minute, we’ll pinpoint where your business stands and
-                how our ERP, Automation, FP&A, and Governance services can
-                unlock your next level.
+              <h1 className=" text-[20px] md:text-[40px] font-bold text-white mb-2 leading-[1.2em]">
+              In just a minute, <span className=" text-[32px] font-bold text-white mb-2">
+              we’ll pinpoint where your business stands and how our ERP, Automation, FP&A, and Governance services can unlock your next level.
+              </span >
               </h1>
+              
               <p className="text-[18px]  text-purple-200">
                 Faster ERP. Sharper dashboards. Smoother processes. Smarter
                 decisions.
@@ -1538,26 +1540,6 @@ const Index = () => {
                   placeholder="Enter your company name"
                   className="h-12 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-purple-500 backdrop-blur-sm"
                   required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor="designation"
-                  className="text-sm font-medium text-purple-200"
-                >
-                  Designation
-                </Label>
-                <Input
-                  id="designation"
-                  value={personalDetails.designation}
-                  onChange={(e) =>
-                    setPersonalDetails((prev) => ({
-                      ...prev,
-                      designation: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter your job title/designation"
-                  className="h-12 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-purple-500 backdrop-blur-sm"
                 />
               </div>
               

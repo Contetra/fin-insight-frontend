@@ -103,7 +103,6 @@ export const getAllInsights = async (): Promise<{
 // Helper function to submit financial assessment form
 export const submitFinancialAssessment = async (formData: {
   fullName: string;
-  designation: string;
   companyName: string;
   phoneNumber?: string;
   selectedAnswers: Record<string, string[]>;
@@ -121,12 +120,13 @@ export const submitFinancialAssessment = async (formData: {
   }>;
   identifiedProblems: string[];
 }): Promise<SubmissionResponse> => {
-  const { fullName, designation, companyName, phoneNumber, selectedAnswers, questionsWithResponses, identifiedProblems } = formData;
+  const { fullName, companyName, phoneNumber, selectedAnswers, questionsWithResponses, identifiedProblems } = formData;
 
   // Create email from name and company
-  const email = `${fullName.toLowerCase().replace(/\s+/g, '.')}@${companyName.toLowerCase().replace(/\s+/g, '')}.com`;
+  const email = `${fullName.toLowerCase().replace(/\s+/g, '.')}` +
+    `@${companyName.toLowerCase().replace(/\s+/g, '')}.com`;
 
-  const personalDetails: any = { fullName, designation, companyName };
+  const personalDetails: { fullName: string; companyName: string; phoneNumber?: string } = { fullName, companyName };
   if (phoneNumber) personalDetails.phoneNumber = phoneNumber;
 
   const submissionData = {

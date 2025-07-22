@@ -464,7 +464,6 @@ export const AdminDashboard = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>Company</TableHead>
                 <TableHead>Phone Number</TableHead>
-                <TableHead>Designation</TableHead>
                 <TableHead>Submission Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Reviews</TableHead>
@@ -482,7 +481,6 @@ export const AdminDashboard = () => {
                     <TableCell>{submission.respondent.email}</TableCell>
                     <TableCell>{submission.respondent.companyName}</TableCell>
                     <TableCell>{personalDetails.phoneNumber || 'N/A'}</TableCell>
-                    <TableCell>{personalDetails.designation || 'N/A'}</TableCell>
                     <TableCell>{new Date(submission.submissionDate).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-xs ${

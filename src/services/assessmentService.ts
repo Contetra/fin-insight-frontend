@@ -6,7 +6,6 @@ export class AssessmentService {
   // Create a new assessment with personal details
   static async createAssessment(data: {
     full_name: string;
-    designation: string;
     company_name: string;
     identified_problems: string[];
     generated_solutions: string[];
@@ -17,11 +16,11 @@ export class AssessmentService {
     try {
       const formData = {
         name: data.full_name,
-        email: `${data.full_name.toLowerCase().replace(/\s+/g, '.')}@${data.company_name.toLowerCase().replace(/\s+/g, '')}.com`,
+        email: `${data.full_name.toLowerCase().replace(/\s+/g, '.')}` +
+          `@${data.company_name.toLowerCase().replace(/\s+/g, '')}.com`,
         companyName: data.company_name,
         formType: 'financial-assessment',
         responses: {
-          designation: data.designation,
           identified_problems: data.identified_problems,
           generated_solutions: data.generated_solutions,
           strategic_recommendations: data.strategic_recommendations,
@@ -34,7 +33,6 @@ export class AssessmentService {
       const assessment: Assessment = {
         id: response.data[0].submissionId,
         full_name: data.full_name,
-        designation: data.designation,
         company_name: data.company_name,
         identified_problems: data.identified_problems,
         generated_solutions: data.generated_solutions,
