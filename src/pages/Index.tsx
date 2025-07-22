@@ -1226,7 +1226,7 @@ const Index = () => {
               }}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-              🎯 Start Your Quest
+              🎯 Let's Find the Bottlenecks
               <ArrowRight className="ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>
           </div>
@@ -1277,8 +1277,8 @@ const Index = () => {
                 </span>
               </div>
               <h1 className=" text-[20px] md:text-[40px] font-bold text-white mb-2 leading-[1.2em]">
-              In just a minute, <span className=" text-[32px] font-bold text-white mb-2">
-              we’ll pinpoint where your business stands and how our ERP, Automation, FP&A, and Governance services can unlock your next level.
+              In just a minute, <span className=" text-[28px] font-bold text-white mb-2">
+              we’ll pinpoint where your business stands and how our ERP, Automation, FP&A, and CFO Back Office can unlock your next level.
               </span >
               </h1>
               
@@ -1787,11 +1787,6 @@ const Index = () => {
                 🏆 {stageDetails.title}: {stageDetails.subtitle}
               </span>
             </div>
-            <div className="text-center mb-8">
-              <h2 className=" text-[18px] md:text-2xl font-bold text-white mb-4">
-                {stageDetails.description}
-              </h2>
-            </div>
             <p
               className=" text-[16px] md:text-xl text-purple-200 max-w-3xl mx-auto animate-fade-in"
               style={{ animationDelay: "0.2s" }}
@@ -1916,6 +1911,14 @@ const Index = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+          {/* Add the Offered Services block at the very bottom of the results page, after the CTA and before the closing tags */}
+          <div className="mt-10 mb-12 animate-fade-in" style={{ animationDelay: "0.8s" }}>
+            <h3 className="text-2xl font-bold text-emerald-300 mb-4 text-center">Our Offered Services</h3>
+            <div className="max-w-2xl mx-auto bg-slate-800/70 rounded-xl p-6 border border-emerald-400/30 shadow-lg text-lg text-left text-emerald-100 flex items-center gap-2 justify-center">
+              <span className="inline-block w-2 h-2 bg-emerald-400 rounded-full mr-2"></span>
+              {stageDetails.description}
+            </div>
           </div>
         </div>
       </div>
